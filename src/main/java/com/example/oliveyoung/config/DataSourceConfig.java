@@ -1,6 +1,7 @@
 package com.example.oliveyoung.config;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
@@ -17,25 +18,35 @@ import javax.sql.DataSource;
 @EnableJpaRepositories(basePackages = "com.example.oliveyoung.repository")
 public class DataSourceConfig {
 
+    @Value("${spring.datasource.reader.url}")
+    private String readerDbUrl;
+
+    @Value("${spring.datasource.writer.url}")
+    private String writerDbUrl;
+
+    @Value("${spring.datasource.username}")
+    private String dbUsername;
+
+    @Value("${spring.datasource.password}")
+    private String dbPassword;
+
     @Bean
     @Qualifier("readerDataSource")
     public DataSource readerDataSource() {
-        // Aurora 리더 데이터소스 설정
         return DataSourceBuilder.create()
-                .url("jdbc:mysql://aurora-reader-url:3306/hachwimu")
-                .username("admin")
-                .password("your-password")
+                .url(readerDbUrl)
+                .username(dbUsername)
+                .password(dbPassword)
                 .build();
     }
 
     @Bean
     @Qualifier("writerDataSource")
     public DataSource writerDataSource() {
-        // Aurora 라이터 데이터소스 설정
         return DataSourceBuilder.create()
-                .url("jdbc:mysql://aurora-writer-url:3306/hachwimu")
-                .username("admin")
-                .password("your-password")
+                .url(writerDbUrl)
+                .username(dbUsername)
+                .password(dbPassword)
                 .build();
     }
 
