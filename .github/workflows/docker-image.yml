@@ -1,0 +1,83 @@
+name: Build and Push to ECR, Update IaC Repo for Argo CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 리포지토리 클론
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. AWS 환경 변수 설정
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      # 3. AWS ECR 로그인
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: private
+
+      # 4. 도커 이미지 빌드
+      - name: Build Docker image
+        run: |
+          TAG=${{ github.sha }}
+          DOCKER_BUILDKIT=1 docker build --no-cache --platform linux/amd64 \
+            --build-arg SSH_PRIVATE_KEY_BUILD="${{ secrets.SSH_PRIVATE_KEY_BUILD }}" \
+            --build-arg SPRING_APPLICATION_NAME="${{ secrets.SPRING_APPLICATION_NAME }}" \
+            --build-arg SPRING_DATASOURCE_WRITER_URL="${{ secrets.SPRING_DATASOURCE_WRITER_URL }}" \
+            --build-arg SPRING_DATASOURCE_READER_URL="${{ secrets.SPRING_DATASOURCE_READER_URL }}" \
+            --build-arg SPRING_DATASOURCE_USERNAME="${{ secrets.SPRING_DATASOURCE_USERNAME }}" \
+            --build-arg SPRING_DATASOURCE_PASSWORD="${{ secrets.SPRING_DATASOURCE_PASSWORD }}" \
+            --build-arg SPRING_DATASOURCE_DRIVER_CLASS_NAME="${{ secrets.SPRING_DATASOURCE_DRIVER_CLASS_NAME }}" \
+            --build-arg SPRING_JPA_HIBERNATE_DDL_AUTO="${{ secrets.SPRING_JPA_HIBERNATE_DDL_AUTO }}" \
+            --build-arg SPRING_JPA_SHOW_SQL="${{ secrets.SPRING_JPA_SHOW_SQL }}" \
+            --build-arg SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT="${{ secrets.SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT }}" \
+            --build-arg SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE="${{ secrets.SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE }}" \
+            --build-arg SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE="${{ secrets.SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE }}" \
+            --build-arg SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT="${{ secrets.SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT }}" \
+            --build-arg SPRING_DATASOURCE_HIKARI_MAX_LIFETIME="${{ secrets.SPRING_DATASOURCE_HIKARI_MAX_LIFETIME }}" \
+            --build-arg SPRING_DATA_REDIS_HOST="${{ secrets.SPRING_DATA_REDIS_HOST }}" \
+            --build-arg SPRING_DATA_REDIS_PORT="${{ secrets.SPRING_DATA_REDIS_PORT }}" \
+            -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hachwimu-product:$TAG .
+
+      # 5. ECR에 도커 이미지 푸시
+      - name: Push to Amazon ECR
+        run: |
+          TAG=${{ github.sha }}
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hachwimu-product:$TAG
+
+      # 6. SSH 설정 (다른 사람의 Private Repo 접근용)
+      - name: Setup SSH key for accessing IaC repo
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_IAC }}
+
+      # 7. GitHub 사용자 설정
+      - name: Set Git config
+        run: |
+          git config --global user.name "jaebinGit"
+          git config --global user.email "tnwoql327@gmail.com"
+
+      # 8. IaC Private Repo에 이미지 태그 업데이트 (Argo CD 자동 배포)
+      - name: Clone IaC Repo and Update Tag
+        run: |
+          TAG=${{ github.sha }}
+          git clone git@github.com:JinsuYeo/hachwimu-iac.git
+          cd hachwimu-iac
+          
+          sed -i "s|image: .*hachwimu-product:.*$|image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hachwimu-product:${TAG}|g" deployment.yaml
+          
+          git add deployment.yaml
+          git commit -m "Update product image to ${TAG}" || echo "Nothing to commit"
+          git push origin main || echo "Push failed"
