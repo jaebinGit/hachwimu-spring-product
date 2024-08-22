@@ -81,3 +81,4 @@ jobs:
           git add deployment.yaml
           git commit -m "Update product image to ${TAG}" || echo "Nothing to commit"
           git push origin main || echo "Push failed"
+        #test
