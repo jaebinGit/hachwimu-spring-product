@@ -1,5 +1,6 @@
 package com.example.oliveyoung.config;
 
+import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -11,11 +12,14 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import jakarta.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
 @Configuration
-@EnableJpaRepositories(basePackages = "com.example.oliveyoung.repository")
+@EnableJpaRepositories(
+        basePackages = "com.example.oliveyoung.repository",
+        entityManagerFactoryRef = "readerEntityManagerFactory",
+        transactionManagerRef = "readerTransactionManager"
+)
 public class DataSourceConfig {
 
     @Value("${spring.datasource.reader.url}")
@@ -52,9 +56,11 @@ public class DataSourceConfig {
 
     @Bean
     @Qualifier("readerEntityManagerFactory")
-    public LocalContainerEntityManagerFactoryBean readerEntityManagerFactory(EntityManagerFactoryBuilder builder,
-                                                                             @Qualifier("readerDataSource") DataSource dataSource) {
-        return builder.dataSource(dataSource)
+    public LocalContainerEntityManagerFactoryBean readerEntityManagerFactory(
+            EntityManagerFactoryBuilder builder,
+            @Qualifier("readerDataSource") DataSource dataSource) {
+        return builder
+                .dataSource(dataSource)
                 .packages("com.example.oliveyoung.model")
                 .persistenceUnit("reader")
                 .build();
@@ -62,9 +68,11 @@ public class DataSourceConfig {
 
     @Bean
     @Qualifier("writerEntityManagerFactory")
-    public LocalContainerEntityManagerFactoryBean writerEntityManagerFactory(EntityManagerFactoryBuilder builder,
-                                                                             @Qualifier("writerDataSource") DataSource dataSource) {
-        return builder.dataSource(dataSource)
+    public LocalContainerEntityManagerFactoryBean writerEntityManagerFactory(
+            EntityManagerFactoryBuilder builder,
+            @Qualifier("writerDataSource") DataSource dataSource) {
+        return builder
+                .dataSource(dataSource)
                 .packages("com.example.oliveyoung.model")
                 .persistenceUnit("writer")
                 .build();
