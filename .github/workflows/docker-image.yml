@@ -32,7 +32,7 @@ jobs:
       - name: Build Docker image
         run: |
           TAG=${{ github.sha }}
-          DOCKER_BUILDKIT=1 docker build --no-cache --platform linux/amd64 \
+          DOCKER_BUILDKIT=1 docker build --platform linux/amd64 \
             --build-arg SSH_PRIVATE_KEY_BUILD="${{ secrets.SSH_PRIVATE_KEY_BUILD }}" \
             --build-arg SPRING_APPLICATION_NAME="${{ secrets.SPRING_APPLICATION_NAME }}" \
             --build-arg SPRING_DATASOURCE_WRITER_URL="${{ secrets.SPRING_DATASOURCE_WRITER_URL }}" \
