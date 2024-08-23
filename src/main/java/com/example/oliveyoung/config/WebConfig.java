@@ -8,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")  // API 경로를 지정
+        registry.addMapping("/**")  // 모든 API 경로에 대한 CORS 설정
                 .allowedOrigins(
                         "https://www.hachwimu.com",   // 프론트엔드 배포 도메인
                         "http://www.hachwimu.com",    // HTTP 프론트엔드 도메인
@@ -19,9 +19,14 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .allowCredentials(true);  // 자격 증명을 허용 (쿠키, 인증 헤더 전송)
 
-        // 헬스 체크 경로에 대한 추가적인 CORS 허용
+        // 헬스 체크 경로에 대한 CORS 허용 - 구체적인 도메인으로 설정
         registry.addMapping("/health")  // 헬스 체크 경로
-                .allowedOrigins("*")  // 모든 도메인 허용
+                .allowedOrigins(
+                        "https://www.hachwimu.com",
+                        "http://www.hachwimu.com",
+                        "https://api.hachwimu.com",
+                        "http://api.hachwimu.com"
+                )
                 .allowedMethods("GET")  // GET 요청만 허용
                 .allowedHeaders("*");
     }
