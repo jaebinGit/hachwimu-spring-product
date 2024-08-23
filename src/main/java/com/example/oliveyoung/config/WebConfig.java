@@ -11,7 +11,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")  // API 경로를 지정
                 .allowedOrigins(
                         "https://www.hachwimu.com",   // 프론트엔드 배포 도메인
-                        "http://www.hachwimu.com",    // HTTP 프론트엔드 도메인
+                        "http://www.hachwimu.com:3000",    // HTTP 프론트엔드 도메인
+                        "http://www.hachwimu.com",
                         "https://api.hachwimu.com",   // API 서버 도메인
                         "http://api.hachwimu.com"     // HTTP로 API 요청
                 )
