@@ -18,5 +18,11 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);  // 자격 증명을 허용 (쿠키, 인증 헤더 전송)
+
+        // 헬스 체크 경로에 대한 추가적인 CORS 허용
+        registry.addMapping("/health")  // 헬스 체크 경로
+                .allowedOrigins("*")  // 모든 도메인 허용
+                .allowedMethods("GET")  // GET 요청만 허용
+                .allowedHeaders("*");
     }
 }
