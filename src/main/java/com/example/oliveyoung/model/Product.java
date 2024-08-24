@@ -17,7 +17,10 @@ public class Product {
     private boolean isBest;
     private String deliveryInfo;
     private boolean saleStatus;
+
+    @Column(name = "coupon_status")
     private boolean couponStatus;
+
     private boolean giftStatus;
     private boolean todayDreamStatus;
     private int stock;
