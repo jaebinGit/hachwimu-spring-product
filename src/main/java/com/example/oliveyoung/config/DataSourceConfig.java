@@ -13,12 +13,14 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @EnableJpaRepositories(
         basePackages = "com.example.oliveyoung.repository",
-        entityManagerFactoryRef = "readerEntityManagerFactory",
-        transactionManagerRef = "readerTransactionManager"
+        entityManagerFactoryRef = "routingEntityManagerFactory",
+        transactionManagerRef = "transactionManager"
 )
 public class DataSourceConfig {
 
@@ -35,7 +37,6 @@ public class DataSourceConfig {
     private String dbPassword;
 
     @Bean
-    @Qualifier("readerDataSource")
     public DataSource readerDataSource() {
         return DataSourceBuilder.create()
                 .url(readerDbUrl)
@@ -45,7 +46,6 @@ public class DataSourceConfig {
     }
 
     @Bean
-    @Qualifier("writerDataSource")
     public DataSource writerDataSource() {
         return DataSourceBuilder.create()
                 .url(writerDbUrl)
@@ -55,40 +55,29 @@ public class DataSourceConfig {
     }
 
     @Bean
-    @Qualifier("readerEntityManagerFactory")
-    public LocalContainerEntityManagerFactoryBean readerEntityManagerFactory(
-            EntityManagerFactoryBuilder builder,
-            @Qualifier("readerDataSource") DataSource dataSource) {
+    public DataSource routingDataSource() {
+        RoutingDataSource routingDataSource = new RoutingDataSource();
+        Map<Object, Object> dataSourceMap = new HashMap<>();
+        dataSourceMap.put("reader", readerDataSource());
+        dataSourceMap.put("writer", writerDataSource());
+        routingDataSource.setTargetDataSources(dataSourceMap);
+        routingDataSource.setDefaultTargetDataSource(writerDataSource());
+        return routingDataSource;
+    }
+
+    @Bean
+    public LocalContainerEntityManagerFactoryBean routingEntityManagerFactory(
+            EntityManagerFactoryBuilder builder) {
         return builder
-                .dataSource(dataSource)
+                .dataSource(routingDataSource())
                 .packages("com.example.oliveyoung.model")
-                .persistenceUnit("reader")
+                .persistenceUnit("default")
                 .build();
     }
 
     @Bean
-    @Qualifier("writerEntityManagerFactory")
-    public LocalContainerEntityManagerFactoryBean writerEntityManagerFactory(
-            EntityManagerFactoryBuilder builder,
-            @Qualifier("writerDataSource") DataSource dataSource) {
-        return builder
-                .dataSource(dataSource)
-                .packages("com.example.oliveyoung.model")
-                .persistenceUnit("writer")
-                .build();
-    }
-
-    @Bean
-    @Qualifier("readerTransactionManager")
-    public PlatformTransactionManager readerTransactionManager(
-            @Qualifier("readerEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
-        return new JpaTransactionManager(entityManagerFactory);
-    }
-
-    @Bean
-    @Qualifier("writerTransactionManager")
-    public PlatformTransactionManager writerTransactionManager(
-            @Qualifier("writerEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
+    public PlatformTransactionManager transactionManager(
+            @Qualifier("routingEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
         return new JpaTransactionManager(entityManagerFactory);
     }
 }

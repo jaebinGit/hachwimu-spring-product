@@ -1,5 +1,6 @@
 package com.example.oliveyoung.service;
 
+import com.example.oliveyoung.config.DataSourceContextHolder;
 import com.example.oliveyoung.model.Product;
 import com.example.oliveyoung.repository.ProductRepository;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,44 +21,111 @@ public class ProductService {
         this.redisTemplate = redisTemplate;
     }
 
-    // 상품 구매 처리 (쓰기 작업은 라이터에서 처리)
-    @Transactional(transactionManager = "writerTransactionManager")
+    @Transactional
     public void purchase(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
-        product.purchase();
-        productRepository.save(product);
+        try {
+            // 쓰기 작업이므로 writer 데이터 소스를 설정
+            DataSourceContextHolder.setDataSourceType("writer");
 
-        // 구매 후 Redis 캐시 무효화
-        redisTemplate.delete("product:" + id);
-    }
+            // 상품 조회
+            Product product = productRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
 
-    // 모든 상품 조회 (읽기 작업은 리더에서 처리)
-    @Transactional(transactionManager = "readerTransactionManager", readOnly = true)
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
-    }
+            // 상품 구매 처리 (재고 감소)
+            product.purchase();
 
-    // 특정 상품 조회 (캐시 -> Aurora 리더)
-    @Transactional(transactionManager = "readerTransactionManager", readOnly = true)
-    public Product getProductById(Long id) {
-        String cacheKey = "product:" + id;
+            // 데이터베이스에 상품 정보 저장 (쓰기 작업)
+            productRepository.save(product);
 
-        // Redis Hash에서 먼저 조회
-        Product cachedProduct = getCachedProduct(cacheKey);
-        if (cachedProduct != null) {
-            return cachedProduct;
+            // 구매 후 캐시 무효화
+            redisTemplate.delete("product:" + id);
+        } finally {
+            // 작업 완료 후 데이터 소스 컨텍스트 초기화
+            DataSourceContextHolder.clearDataSourceType();
         }
-
-        // 캐시에 없으면 DB 리더 인스턴스에서 조회
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
-
-        // 조회된 상품을 Redis Hash에 캐시하고 1시간 TTL 설정
-        cacheProduct(cacheKey, product, 1, TimeUnit.HOURS);
-        return product;
     }
 
+    @Transactional(readOnly = true)
+    public List<Product> getAllProducts() {
+        try {
+            // 읽기 작업이므로 reader 데이터 소스를 설정
+            DataSourceContextHolder.setDataSourceType("reader");
+
+            // 모든 상품을 데이터베이스에서 조회
+            return productRepository.findAll();
+        } finally {
+            // 작업 완료 후 데이터 소스 컨텍스트 초기화
+            DataSourceContextHolder.clearDataSourceType();
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Product getProductById(Long id) {
+        try {
+            // 읽기 작업이므로 reader 데이터 소스를 설정
+            DataSourceContextHolder.setDataSourceType("reader");
+
+            // 캐시에서 상품 조회 시도
+            String cacheKey = "product:" + id;
+            Product cachedProduct = getCachedProduct(cacheKey);
+
+            if (cachedProduct != null) {
+                return cachedProduct;
+            }
+
+            // 캐시에 없을 경우, 데이터베이스에서 상품 조회
+            Product product = productRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
+
+            // 조회된 상품을 캐시에 저장 (TTL 1시간)
+            cacheProduct(cacheKey, product, 1, TimeUnit.HOURS);
+
+            return product;
+        } finally {
+            // 작업 완료 후 데이터 소스 컨텍스트 초기화
+            DataSourceContextHolder.clearDataSourceType();
+        }
+    }
+
+    @Transactional
+    public Product updateProduct(Long id, Product updatedProduct) {
+        try {
+            // 쓰기 작업이므로 writer 데이터 소스를 설정
+            DataSourceContextHolder.setDataSourceType("writer");
+
+            // 상품 조회
+            Product product = productRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
+
+            // 상품 정보 업데이트
+            product.setName(updatedProduct.getName());
+            product.setImageUrl(updatedProduct.getImageUrl());
+            product.setPrice(updatedProduct.getPrice());
+            product.setBrand(updatedProduct.getBrand());
+            product.setBest(updatedProduct.isBest());
+            product.setDeliveryInfo(updatedProduct.getDeliveryInfo());
+            product.setSaleStatus(updatedProduct.isSaleStatus());
+            product.setCouponStatus(updatedProduct.isCouponStatus());
+            product.setGiftStatus(updatedProduct.isGiftStatus());
+            product.setTodayDreamStatus(updatedProduct.isTodayDreamStatus());
+            product.setStock(updatedProduct.getStock());
+            product.setDiscountPrice(updatedProduct.getDiscountPrice());
+            product.setOtherDiscount(updatedProduct.isOtherDiscount());
+
+            // 데이터베이스에 업데이트된 상품 정보 저장
+            productRepository.save(product);
+
+            // 업데이트 후 캐시 무효화
+            redisTemplate.delete("product:" + id);
+
+            return product;
+        } finally {
+            // 작업 완료 후 데이터 소스 컨텍스트 초기화
+            DataSourceContextHolder.clearDataSourceType();
+        }
+    }
+
+    // 캐시에서 상품 조회 메서드
     private Product getCachedProduct(String cacheKey) {
         Map<Object, Object> productMap = redisTemplate.opsForHash().entries(cacheKey);
         if (productMap == null || productMap.isEmpty()) {
@@ -83,6 +151,7 @@ public class ProductService {
         return product;
     }
 
+    // 캐시에 상품 저장 메서드
     private void cacheProduct(String cacheKey, Product product, long timeout, TimeUnit unit) {
         redisTemplate.opsForHash().put(cacheKey, "id", String.valueOf(product.getId()));
         redisTemplate.opsForHash().put(cacheKey, "name", product.getName());
@@ -99,33 +168,5 @@ public class ProductService {
         redisTemplate.opsForHash().put(cacheKey, "discountPrice", String.valueOf(product.getDiscountPrice()));
         redisTemplate.opsForHash().put(cacheKey, "otherDiscount", String.valueOf(product.isOtherDiscount()));
         redisTemplate.expire(cacheKey, timeout, unit);
-    }
-
-    // Backoffice에서 상품 업데이트 (쓰기 작업은 라이터에서 처리)
-    @Transactional(transactionManager = "writerTransactionManager")
-    public Product updateProduct(Long id, Product updatedProduct) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
-
-        product.setName(updatedProduct.getName());
-        product.setImageUrl(updatedProduct.getImageUrl());
-        product.setPrice(updatedProduct.getPrice());
-        product.setBrand(updatedProduct.getBrand());
-        product.setBest(updatedProduct.isBest());
-        product.setDeliveryInfo(updatedProduct.getDeliveryInfo());
-        product.setSaleStatus(updatedProduct.isSaleStatus());
-        product.setCouponStatus(updatedProduct.isCouponStatus());
-        product.setGiftStatus(updatedProduct.isGiftStatus());
-        product.setTodayDreamStatus(updatedProduct.isTodayDreamStatus());
-        product.setStock(updatedProduct.getStock());
-        product.setDiscountPrice(updatedProduct.getDiscountPrice());
-        product.setOtherDiscount(updatedProduct.isOtherDiscount());
-
-        productRepository.save(product);
-
-        // 업데이트 후 Redis 캐시 무효화
-        redisTemplate.delete("product:" + id);
-
-        return product;
     }
 }
