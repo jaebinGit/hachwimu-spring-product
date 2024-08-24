@@ -21,6 +21,7 @@ public class ProductService {
         this.redisTemplate = redisTemplate;
     }
 
+    // 상품 구매 처리 (쓰기 작업)
     @Transactional
     public void purchase(Long id) {
         try {
@@ -37,47 +38,63 @@ public class ProductService {
             // 데이터베이스에 상품 정보 저장 (쓰기 작업)
             productRepository.save(product);
 
-            // 구매 후 캐시 무효화
+            // 구매 후 해당 상품과 전체 목록 캐시 무효화
             redisTemplate.delete("product:" + id);
+            redisTemplate.delete("products:all");
         } finally {
             // 작업 완료 후 데이터 소스 컨텍스트 초기화
             DataSourceContextHolder.clearDataSourceType();
         }
     }
 
+    // 모든 상품 정보 조회 (읽기 작업)
     @Transactional(readOnly = true)
     public List<Product> getAllProducts() {
+        String cacheKey = "products:all";
         try {
             // 읽기 작업이므로 reader 데이터 소스를 설정
             DataSourceContextHolder.setDataSourceType("reader");
 
-            // 모든 상품을 데이터베이스에서 조회
-            return productRepository.findAll();
+            // 캐시에서 모든 상품 조회 시도
+            List<Product> cachedProducts = (List<Product>) redisTemplate.opsForValue().get(cacheKey);
+
+            if (cachedProducts != null && !cachedProducts.isEmpty()) {
+                return cachedProducts;  // 캐시된 데이터가 존재하면 반환
+            }
+
+            // 캐시에 없을 경우, 데이터베이스에서 모든 상품 조회
+            List<Product> products = productRepository.findAll();
+
+            // 조회된 상품 목록을 캐시에 저장 (TTL 1시간 설정)
+            redisTemplate.opsForValue().set(cacheKey, products, 1, TimeUnit.HOURS);
+
+            return products;
         } finally {
             // 작업 완료 후 데이터 소스 컨텍스트 초기화
             DataSourceContextHolder.clearDataSourceType();
         }
     }
 
+    // 특정 상품 조회 (캐시 -> Aurora 리더)
     @Transactional(readOnly = true)
     public Product getProductById(Long id) {
+        String cacheKey = "product:" + id;
         try {
             // 읽기 작업이므로 reader 데이터 소스를 설정
             DataSourceContextHolder.setDataSourceType("reader");
 
             // 캐시에서 상품 조회 시도
-            String cacheKey = "product:" + id;
             Product cachedProduct = getCachedProduct(cacheKey);
 
             if (cachedProduct != null) {
-                return cachedProduct;
+                return cachedProduct;  // 캐시된 상품이 있으면 반환
             }
 
             // 캐시에 없을 경우, 데이터베이스에서 상품 조회
             Product product = productRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
 
-            // 조회된 상품을 캐시에 저장 (TTL 1시간)
+            // 조회된 상품을 캐시에 저장 (TTL 1시간 설정)
             cacheProduct(cacheKey, product, 1, TimeUnit.HOURS);
 
             return product;
@@ -87,6 +104,7 @@ public class ProductService {
         }
     }
 
+    // 상품 업데이트 처리 (쓰기 작업)
     @Transactional
     public Product updateProduct(Long id, Product updatedProduct) {
         try {
@@ -115,8 +133,9 @@ public class ProductService {
             // 데이터베이스에 업데이트된 상품 정보 저장
             productRepository.save(product);
 
-            // 업데이트 후 캐시 무효화
+            // 업데이트 후 해당 상품과 전체 목록 캐시 무효화
             redisTemplate.delete("product:" + id);
+            redisTemplate.delete("products:all");
 
             return product;
         } finally {
