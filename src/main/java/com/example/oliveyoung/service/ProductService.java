@@ -21,6 +21,29 @@ public class ProductService {
         this.redisTemplate = redisTemplate;
     }
 
+    // 상품 등록 처리 (쓰기 작업)
+    @Transactional
+    public Product createProduct(Product product) {
+        try {
+            // 쓰기 작업이므로 writer 데이터 소스를 설정
+            DataSourceContextHolder.setDataSourceType("writer");
+
+            // 데이터베이스에 상품 정보 저장 (쓰기 작업)
+            Product savedProduct = productRepository.save(product);
+
+            // 전체 목록 캐시 무효화
+            redisTemplate.delete("products:all");
+
+            // 개별 상품 캐시에 저장 (TTL 1시간 설정)
+            cacheProduct("product:" + savedProduct.getId(), savedProduct, 1, TimeUnit.HOURS);
+
+            return savedProduct;
+        } finally {
+            // 작업 완료 후 데이터 소스 컨텍스트 초기화
+            DataSourceContextHolder.clearDataSourceType();
+        }
+    }
+
     // 상품 구매 처리 (쓰기 작업)
     @Transactional
     public void purchase(Long id) {

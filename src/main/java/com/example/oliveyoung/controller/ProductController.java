@@ -18,6 +18,17 @@ public class ProductController {
         this.productService = productService;
     }
 
+    // 상품 등록
+    @PostMapping("/create")
+    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
+        try {
+            Product createdProduct = productService.createProduct(product);  // 상품 등록 처리
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);  // 상품 등록 성공
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // 서버 오류 발생
+        }
+    }
+
     // 상품 구매
     @PostMapping("/purchase/{id}")
     public ResponseEntity<Void> purchase(@PathVariable Long id) {
