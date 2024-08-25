@@ -76,9 +76,9 @@ jobs:
           git clone git@github.com:JinsuYeo/hachwimu-iac.git
           cd hachwimu-iac
           
-          sed -i "s|image: .*hachwimu-product:.*$|image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hachwimu-product:${TAG}|g" deployment.yaml
+          sed -i "s|image: .*hachwimu-product:.*$|image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hachwimu-product:${TAG}|g" rollout.yaml
           
-          git add deployment.yaml
+          git add rollout.yaml
           git commit -m "Update product image to ${TAG}" || echo "Nothing to commit"
           git push origin main || echo "Push failed"
         #test222
