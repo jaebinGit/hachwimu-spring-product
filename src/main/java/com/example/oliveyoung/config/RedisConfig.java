@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import io.lettuce.core.resource.ClientResources;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -62,8 +63,13 @@ public class RedisConfig {
 
         // Connection Pool 설정 (최대 연결 수와 최소 유휴 연결 수 등 조정)
         factory.setShareNativeConnection(true);  // 여러 쓰레드 간에 연결을 공유
-        factory.setValidateConnection(true);     // Eager Initialization: 연결을 미리 검증
 
         return factory;
+    }
+
+    @Bean
+    public SmartInitializingSingleton forceRedisConnection(LettuceConnectionFactory redisConnectionFactory) {
+        // Redis 연결 강제 초기화
+        return redisConnectionFactory::getConnection;
     }
 }
