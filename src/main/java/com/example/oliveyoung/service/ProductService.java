@@ -38,9 +38,6 @@ public class ProductService {
             // 데이터베이스에 상품 정보 저장 (쓰기 작업)
             productRepository.save(product);
 
-            // 구매 후 해당 상품과 전체 목록 캐시 무효화
-            redisTemplate.delete("product:" + id);
-            redisTemplate.delete("products:all");
         } finally {
             // 작업 완료 후 데이터 소스 컨텍스트 초기화
             DataSourceContextHolder.clearDataSourceType();
@@ -163,7 +160,6 @@ public class ProductService {
         product.setCouponStatus(Boolean.parseBoolean((String) productMap.get("couponStatus")));
         product.setGiftStatus(Boolean.parseBoolean((String) productMap.get("giftStatus")));
         product.setTodayDreamStatus(Boolean.parseBoolean((String) productMap.get("todayDreamStatus")));
-        product.setStock(Integer.parseInt((String) productMap.get("stock")));
         product.setDiscountPrice(Double.parseDouble((String) productMap.get("discountPrice")));
         product.setOtherDiscount(Boolean.parseBoolean((String) productMap.get("otherDiscount")));
 
@@ -183,7 +179,6 @@ public class ProductService {
         redisTemplate.opsForHash().put(cacheKey, "couponStatus", String.valueOf(product.isCouponStatus()));
         redisTemplate.opsForHash().put(cacheKey, "giftStatus", String.valueOf(product.isGiftStatus()));
         redisTemplate.opsForHash().put(cacheKey, "todayDreamStatus", String.valueOf(product.isTodayDreamStatus()));
-        redisTemplate.opsForHash().put(cacheKey, "stock", String.valueOf(product.getStock()));
         redisTemplate.opsForHash().put(cacheKey, "discountPrice", String.valueOf(product.getDiscountPrice()));
         redisTemplate.opsForHash().put(cacheKey, "otherDiscount", String.valueOf(product.isOtherDiscount()));
         redisTemplate.expire(cacheKey, timeout, unit);
