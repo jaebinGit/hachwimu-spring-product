@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 public class GitService {
 
     private static final String REMOTE_URL = "https://github.com/JinsuYeo/hachwimu-iac.git";
-    private static final String LOCAL_REPO_PATH = "/app";  // 로컬 저장소 경로
+    private static final String LOCAL_REPO_PATH = "/app/repo";  // 로컬 저장소 경로
     private static final String BRANCH_NAME = "main";  // 브랜치 이름
 
     private final CredentialsProvider credentialsProvider;
