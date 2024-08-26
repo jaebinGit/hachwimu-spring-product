@@ -124,6 +124,30 @@ public class ProductService {
         }
     }
 
+    // 상품 삭제 처리 (쓰기 작업)
+    @Transactional
+    public void deleteProduct(Long id) {
+        try {
+            // 쓰기 작업이므로 writer 데이터 소스를 설정
+            DataSourceContextHolder.setDataSourceType("writer");
+
+            // 상품 조회
+            Product product = productRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
+
+            // 상품 삭제 처리
+            productRepository.delete(product);
+
+            // 삭제된 상품의 캐시 무효화
+            redisTemplate.delete("product:" + id);
+            redisTemplate.delete("products:all");
+        } finally {
+            // 작업 완료 후 데이터 소스 컨텍스트 초기화
+            DataSourceContextHolder.clearDataSourceType();
+        }
+    }
+
+
     // 상품 업데이트 처리 (쓰기 작업)
     @Transactional
     public Product updateProduct(Long id, Product updatedProduct) {
