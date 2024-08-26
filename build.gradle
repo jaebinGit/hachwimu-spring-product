@@ -53,6 +53,9 @@ dependencies {
 	//k8s
 	implementation 'io.kubernetes:client-java:15.0.1'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	//git
+	implementation 'org.eclipse.jgit:org.eclipse.jgit:6.10.0.202406032230-r'
 }
 
 tasks.named('test') {
