@@ -19,7 +19,7 @@ RUN ssh-keyscan github.com >> ~/.ssh/known_hosts
 RUN git clone git@github.com:jaebinGit/hachwimu-spring-product.git .
 
 # Git 저장소 클론 (두 번째 리포지토리)
-RUN git clone https://github.com/JinsuYeo/hachwimu-iac.git iac-repo
+RUN git clone git@github.com:JinsuYeo/hachwimu-iac.git iac-repo
 
 # Remove sensitive data after cloning
 RUN rm -rf ~/.ssh/id_rsa
