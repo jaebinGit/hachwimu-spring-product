@@ -6,6 +6,7 @@ import com.example.oliveyoung.repository.ProductRepository;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.Map;
@@ -97,25 +98,30 @@ public class ProductService {
 
     // 특정 상품 조회 (캐시 -> Aurora 리더)
     @Transactional(readOnly = true)
-    public Product getProductById(Long id) {
+    public Product getProductById(Long id, @RequestParam(defaultValue = "true") boolean useCache) {
         String cacheKey = "product:" + id;
         try {
             // 읽기 작업이므로 reader 데이터 소스를 설정
             DataSourceContextHolder.setDataSourceType("reader");
 
-//            // 캐시에서 상품 조회 시도
-//            Product cachedProduct = getCachedProduct(cacheKey);
-//
-//            if (cachedProduct != null) {
-//                return cachedProduct;  // 캐시된 상품이 있으면 반환
-//            }
+            // 캐시를 사용하는 경우
+            if (useCache) {
+                // 캐시에서 상품 조회 시도
+                Product cachedProduct = getCachedProduct(cacheKey);
 
-            // 캐시에 없을 경우, 데이터베이스에서 상품 조회
+                if (cachedProduct != null) {
+                    return cachedProduct;  // 캐시된 상품이 있으면 반환
+                }
+            }
+
+            // 캐시에 없거나 캐시를 사용하지 않는 경우, 데이터베이스에서 상품 조회
             Product product = productRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
 
-//            // 조회된 상품을 캐시에 저장 (TTL 1시간 설정)
-//            cacheProduct(cacheKey, product, 1, TimeUnit.HOURS);
+            // 캐시 사용이 true일 경우, 조회된 상품을 캐시에 저장 (TTL 1시간 설정)
+            if (useCache) {
+                cacheProduct(cacheKey, product, 1, TimeUnit.HOURS);
+            }
 
             return product;
         } finally {

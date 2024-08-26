@@ -55,14 +55,18 @@ public class ProductController {
 
     // 특정 상품 조회
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+    public ResponseEntity<Product> getProductById(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "true") boolean useCache) {
         try {
-            Product product = productService.getProductById(id);  // 캐시를 먼저 조회하고, 없으면 리더로 조회
+            Product product = productService.getProductById(id, useCache);  // 캐시 사용 여부에 따라 조회
             if (product != null) {
                 return ResponseEntity.ok(product);  // 성공적으로 조회됨
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();  // 상품을 찾을 수 없음
             }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();  // 상품을 찾을 수 없음
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // 서버 오류 발생
         }
