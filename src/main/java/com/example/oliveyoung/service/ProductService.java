@@ -103,19 +103,19 @@ public class ProductService {
             // 읽기 작업이므로 reader 데이터 소스를 설정
             DataSourceContextHolder.setDataSourceType("reader");
 
-            // 캐시에서 상품 조회 시도
-            Product cachedProduct = getCachedProduct(cacheKey);
-
-            if (cachedProduct != null) {
-                return cachedProduct;  // 캐시된 상품이 있으면 반환
-            }
+//            // 캐시에서 상품 조회 시도
+//            Product cachedProduct = getCachedProduct(cacheKey);
+//
+//            if (cachedProduct != null) {
+//                return cachedProduct;  // 캐시된 상품이 있으면 반환
+//            }
 
             // 캐시에 없을 경우, 데이터베이스에서 상품 조회
             Product product = productRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
 
-            // 조회된 상품을 캐시에 저장 (TTL 1시간 설정)
-            cacheProduct(cacheKey, product, 1, TimeUnit.HOURS);
+//            // 조회된 상품을 캐시에 저장 (TTL 1시간 설정)
+//            cacheProduct(cacheKey, product, 1, TimeUnit.HOURS);
 
             return product;
         } finally {
