@@ -35,7 +35,7 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app/repo
 
 # 빌드 단계에서 생성된 JAR 파일 복사
-COPY --from=build /app/build/libs/oliveyoung-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /app/repo/build/libs/oliveyoung-0.0.1-SNAPSHOT.jar app.jar
 
 # 환경 변수 설정 (빌드 시 전달된 값들)
 ARG SPRING_APPLICATION_NAME
