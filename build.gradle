@@ -53,6 +53,9 @@ dependencies {
 	//k8s
 	implementation 'io.kubernetes:client-java:15.0.1'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	//datadog
+	implementation 'com.datadoghq:dd-java-agent:latest'  // 최신 버전 확인
 }
 
 tasks.named('test') {
