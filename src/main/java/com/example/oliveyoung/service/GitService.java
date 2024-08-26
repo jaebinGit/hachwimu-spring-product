@@ -3,8 +3,7 @@ package com.example.oliveyoung.service;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.CredentialsProvider;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -22,11 +21,11 @@ public class GitService {
     private static final String LOCAL_REPO_PATH = "/app";  // 로컬 저장소 경로
     private static final String BRANCH_NAME = "main";  // 브랜치 이름
 
-    @Value("${GIT_TOKEN}")
-    private String gitToken;
+    private final CredentialsProvider credentialsProvider;
 
-    private final CredentialsProvider credentialsProvider =
-            new UsernamePasswordCredentialsProvider("jaebinGit", gitToken);
+    public GitService(CredentialsProvider credentialsProvider) {
+        this.credentialsProvider = credentialsProvider;
+    }
 
     @Async // 비동기적으로 작업을 처리
     public CompletableFuture<String> updateMinReplicas(int replicas) throws GitAPIException, IOException {
