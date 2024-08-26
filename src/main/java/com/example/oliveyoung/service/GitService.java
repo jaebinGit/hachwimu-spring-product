@@ -3,7 +3,6 @@ package com.example.oliveyoung.service;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.CredentialsProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 public class GitService {
 
     private static final String REMOTE_URL = "https://github.com/JinsuYeo/hachwimu-iac.git";
-    private static final String LOCAL_REPO_PATH = "/app/repo";  // 로컬 저장소 경로
+    private static final String LOCAL_REPO_PATH = "/app/repo/iac-repo";  // 로컬 저장소 경로
     private static final String BRANCH_NAME = "main";  // 브랜치 이름
 
     private final CredentialsProvider credentialsProvider;
