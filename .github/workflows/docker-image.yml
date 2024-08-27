@@ -60,7 +60,7 @@ jobs:
       - name: Push to Amazon ECR
         run: |
           TAG=${{ github.sha }}
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hachwimu-product:$TAG
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/hachwimu-product:$TAG
 
       # 6. SSH 설정 (다른 사람의 Private Repo 접근용)
       - name: Setup SSH key for accessing IaC repo
