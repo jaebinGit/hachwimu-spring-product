@@ -22,9 +22,17 @@ public class GitController {
         this.gitService = gitService;
     }
 
-    @PostMapping("/scale")
-    public CompletableFuture<ResponseEntity<String>> scaleService(@RequestParam int replicas) throws GitAPIException, IOException {
-        return gitService.updateMinReplicas(replicas)
+    @PostMapping("/pod/scale")
+    public CompletableFuture<ResponseEntity<String>> podScaleService(@RequestParam int replicas) throws GitAPIException, IOException {
+        return gitService.updatePodMinReplicas(replicas)
+                .thenApply(ResponseEntity::ok) // 비동기 작업 성공 시 응답 처리
+                .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Error: " + ex.getMessage())); // 비동기 작업 실패 시 예외 처리
+    }
+
+    @PostMapping("/node/scale")
+    public CompletableFuture<ResponseEntity<String>> nodScaleService(@RequestParam int replicas) throws GitAPIException, IOException {
+        return gitService.updateNodeMinReplicas(replicas)
                 .thenApply(ResponseEntity::ok) // 비동기 작업 성공 시 응답 처리
                 .exceptionally(ex -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Error: " + ex.getMessage())); // 비동기 작업 실패 시 예외 처리

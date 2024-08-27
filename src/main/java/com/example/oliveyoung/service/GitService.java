@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 @Service
 public class GitService {
@@ -27,7 +28,7 @@ public class GitService {
     }
 
     @Async // 비동기적으로 작업을 처리
-    public CompletableFuture<String> updateMinReplicas(int replicas) throws GitAPIException, IOException {
+    public CompletableFuture<String> updatePodMinReplicas(int replicas) throws GitAPIException, IOException {
         // 1. 로컬 저장소 Clone or Pull
         Git git = pullOrCloneRepository();
 
@@ -35,7 +36,7 @@ public class GitService {
         Path yamlFilePath = Paths.get(LOCAL_REPO_PATH, "hpa.yaml");
 
         // 3. 파일 수정
-        modifyYamlFile(yamlFilePath, replicas);
+        modifyPodYamlFile(yamlFilePath, replicas);
 
         // 4. Git Add, Commit, Push
         git.add().addFilepattern("hpa.yaml").call();
@@ -44,6 +45,26 @@ public class GitService {
 
         return CompletableFuture.completedFuture("Successfully updated minReplicas for service-products to " + replicas + " and pushed to repository.");
     }
+
+    @Async // 비동기적으로 작업을 처리
+    public CompletableFuture<String> updateNodeMinReplicas(int replicas) throws GitAPIException, IOException {
+        // 1. 로컬 저장소 Clone or Pull
+        Git git = pullOrCloneRepository();
+
+        // 2. overprovision.yaml 파일 경로
+        Path yamlFilePath = Paths.get(LOCAL_REPO_PATH, "overprovision.yaml");
+
+        // 3. 파일 수정
+        modifyNodeYamlFile(yamlFilePath, replicas);
+
+        // 4. Git Add, Commit, Push
+        git.add().addFilepattern("overprovision.yaml").call();
+        git.commit().setMessage("Updated replicas for nginx to " + replicas).call();
+        git.push().setCredentialsProvider(credentialsProvider).call();
+
+        return CompletableFuture.completedFuture("Successfully updated replicas for nginx to " + replicas + " and pushed to repository.");
+    }
+
 
     private Git pullOrCloneRepository() throws GitAPIException, IOException {
         File repoDir = new File(LOCAL_REPO_PATH);
@@ -66,17 +87,32 @@ public class GitService {
         return git;
     }
 
-    private void modifyYamlFile(Path filePath, int replicas) throws IOException {
+    private void modifyPodYamlFile(Path filePath, int replicas) throws IOException {
         // 파일을 읽어온 후 minReplicas 값을 찾아서 교체
         String content = new String(Files.readAllBytes(filePath));
-        String modifiedContent = modifyMinReplicasForProducts(content, replicas);  // 서비스 프로덕트만 변경
+        String modifiedContent = modifyMinReplicasInHpa(content, replicas);  // 서비스 프로덕트만 변경
         Files.write(filePath, modifiedContent.getBytes());
     }
 
+    private void modifyNodeYamlFile(Path filePath, int replicas) throws IOException {
+        // 파일을 읽어온 후 replicas 값을 교체
+        String content = new String(Files.readAllBytes(filePath));
+        String modifiedContent = modifyReplicasInOverprovision(content, replicas);  // nginx 서비스의 replicas 변경
+        Files.write(filePath, modifiedContent.getBytes());
+    }
+
+
     // service-products HorizontalPodAutoscaler만을 대상으로 minReplicas 값을 업데이트합니다.
-    public static String modifyMinReplicasForProducts(String content, int replicas) {
+    public static String modifyMinReplicasInHpa(String content, int replicas) {
         // service-products HorizontalPodAutoscaler만을 대상으로 minReplicas 값을 업데이트
         String regex = "(?s)(metadata:\\s*name:\\s*service-hpa-products.*?minReplicas:\\s*)\\d+";
+        return content.replaceAll(regex, "$1" + replicas);
+    }
+
+    // overprovision.yaml에서 replicas 값을 업데이트합니다.
+    public static String modifyReplicasInOverprovision(String content, int replicas) {
+        // nginx Deployment에서 replicas 값을 업데이트
+        String regex = "(?m)(replicas:\\s*)\\d+";
         return content.replaceAll(regex, "$1" + replicas);
     }
 }
