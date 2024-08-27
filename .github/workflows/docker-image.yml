@@ -54,7 +54,7 @@ jobs:
             --build-arg KUBERNETES_NAMESPACE="${{ secrets.KUBERNETES_NAMESPACE }}" \
             --build-arg KUBERNETES_DEPLOYMENT_NAME="${{ secrets.KUBERNETES_DEPLOYMENT_NAME }}" \
             --build-arg KUBERNETES_TOKEN_PATH="${{ secrets.KUBERNETES_TOKEN_PATH }}" \
-            -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hachwimu-product:$TAG .
+            -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/hachwimu-product:$TAG .
 
       # 5. ECR에 도커 이미지 푸시
       - name: Push to Amazon ECR
