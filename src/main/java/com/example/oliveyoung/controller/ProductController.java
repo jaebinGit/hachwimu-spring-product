@@ -97,4 +97,10 @@ public class ProductController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // 서버 오류 발생
         }
     }
+
+    @PostMapping("/cache/clear")
+    public ResponseEntity<Void> clearAllProductsCache() {
+        productService.clearAllProductsCache();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
 }
