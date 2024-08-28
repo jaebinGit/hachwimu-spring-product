@@ -71,23 +71,23 @@ public class ProductService {
     // 모든 상품 정보 조회 (읽기 작업)
     @Transactional(readOnly = true)
     public List<Product> getAllProducts() {
-        String cacheKey = "products:all";
+//        String cacheKey = "products:all";
         try {
             // 읽기 작업이므로 reader 데이터 소스를 설정
             DataSourceContextHolder.setDataSourceType("reader");
 
             // 캐시에서 모든 상품 조회 시도
-            List<Product> cachedProducts = (List<Product>) redisTemplate.opsForValue().get(cacheKey);
+//            List<Product> cachedProducts = (List<Product>) redisTemplate.opsForValue().get(cacheKey);
 
-            if (cachedProducts != null && !cachedProducts.isEmpty()) {
-                return cachedProducts;  // 캐시된 데이터가 존재하면 반환
-            }
+//            if (cachedProducts != null && !cachedProducts.isEmpty()) {
+//                return cachedProducts;  // 캐시된 데이터가 존재하면 반환
+//            }
 
             // 캐시에 없을 경우, 데이터베이스에서 모든 상품 조회
             List<Product> products = productRepository.findAll();
 
-            // 조회된 상품 목록을 캐시에 저장 (TTL 1시간 설정)
-            redisTemplate.opsForValue().set(cacheKey, products, 1, TimeUnit.HOURS);
+//            // 조회된 상품 목록을 캐시에 저장 (TTL 1시간 설정)
+//            redisTemplate.opsForValue().set(cacheKey, products, 1, TimeUnit.HOURS);
 
             return products;
         } finally {
