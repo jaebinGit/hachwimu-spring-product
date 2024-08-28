@@ -18,17 +18,6 @@ public class ProductController {
         this.productService = productService;
     }
 
-    // 상품 등록
-    @PostMapping("/create")
-    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
-        try {
-            Product createdProduct = productService.createProduct(product);  // 상품 등록 처리
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);  // 상품 등록 성공
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // 서버 오류 발생
-        }
-    }
-
     // 상품 구매
     @PostMapping("/purchase/{id}")
     public ResponseEntity<Void> purchase(@PathVariable Long id) {
@@ -65,32 +54,6 @@ public class ProductController {
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();  // 상품을 찾을 수 없음
             }
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();  // 상품을 찾을 수 없음
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // 서버 오류 발생
-        }
-    }
-
-    // 상품 수정
-    @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product updatedProduct) {
-        try {
-            Product product = productService.updateProduct(id, updatedProduct);  // 상품 수정 처리
-            return ResponseEntity.ok(product);  // 성공적으로 수정됨
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();  // 수정하려는 상품을 찾을 수 없음
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // 서버 오류 발생
-        }
-    }
-
-    // 상품 삭제
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        try {
-            productService.deleteProduct(id);  // 상품 삭제 처리
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();  // 성공적으로 처리됨
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();  // 상품을 찾을 수 없음
         } catch (Exception e) {

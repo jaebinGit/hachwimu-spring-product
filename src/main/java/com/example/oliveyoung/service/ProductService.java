@@ -22,29 +22,6 @@ public class ProductService {
         this.redisTemplate = redisTemplate;
     }
 
-    // 상품 등록 처리 (쓰기 작업)
-    @Transactional
-    public Product createProduct(Product product) {
-        try {
-            // 쓰기 작업이므로 writer 데이터 소스를 설정
-            DataSourceContextHolder.setDataSourceType("writer");
-
-            // 데이터베이스에 상품 정보 저장 (쓰기 작업)
-            Product savedProduct = productRepository.save(product);
-
-            // 전체 목록 캐시 무효화
-            redisTemplate.delete("products:all");
-
-            // 개별 상품 캐시에 저장 (TTL 1시간 설정)
-            cacheProduct("product:" + savedProduct.getId(), savedProduct, 1, TimeUnit.HOURS);
-
-            return savedProduct;
-        } finally {
-            // 작업 완료 후 데이터 소스 컨텍스트 초기화
-            DataSourceContextHolder.clearDataSourceType();
-        }
-    }
-
     // 상품 구매 처리 (쓰기 작업)
     @Transactional
     public void purchase(Long id) {
@@ -77,17 +54,17 @@ public class ProductService {
             DataSourceContextHolder.setDataSourceType("reader");
 
 //             캐시에서 모든 상품 조회 시도
-//            List<Product> cachedProducts = (List<Product>) redisTemplate.opsForValue().get(cacheKey);
+            List<Product> cachedProducts = (List<Product>) redisTemplate.opsForValue().get(cacheKey);
 
-//            if (cachedProducts != null && !cachedProducts.isEmpty()) {
-//                return cachedProducts;  // 캐시된 데이터가 존재하면 반환
-//            }
+            if (cachedProducts != null && !cachedProducts.isEmpty()) {
+                return cachedProducts;  // 캐시된 데이터가 존재하면 반환
+            }
 
             // 캐시에 없을 경우, 데이터베이스에서 모든 상품 조회
             List<Product> products = productRepository.findAll();
 
-//            // 조회된 상품 목록을 캐시에 저장 (TTL 1시간 설정)
-//            redisTemplate.opsForValue().set(cacheKey, products, 1, TimeUnit.HOURS);
+            // 조회된 상품 목록을 캐시에 저장 (TTL 1시간 설정)
+            redisTemplate.opsForValue().set(cacheKey, products, 1, TimeUnit.HOURS);
 
             return products;
         } finally {
@@ -122,70 +99,6 @@ public class ProductService {
             if (useCache) {
                 cacheProduct(cacheKey, product, 1, TimeUnit.HOURS);
             }
-
-            return product;
-        } finally {
-            // 작업 완료 후 데이터 소스 컨텍스트 초기화
-            DataSourceContextHolder.clearDataSourceType();
-        }
-    }
-
-    // 상품 삭제 처리 (쓰기 작업)
-    @Transactional
-    public void deleteProduct(Long id) {
-        try {
-            // 쓰기 작업이므로 writer 데이터 소스를 설정
-            DataSourceContextHolder.setDataSourceType("writer");
-
-            // 상품 조회
-            Product product = productRepository.findById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
-
-            // 상품 삭제 처리
-            productRepository.delete(product);
-
-            // 삭제된 상품의 캐시 무효화
-            redisTemplate.delete("product:" + id);
-            redisTemplate.delete("products:all");
-        } finally {
-            // 작업 완료 후 데이터 소스 컨텍스트 초기화
-            DataSourceContextHolder.clearDataSourceType();
-        }
-    }
-
-
-    // 상품 업데이트 처리 (쓰기 작업)
-    @Transactional
-    public Product updateProduct(Long id, Product updatedProduct) {
-        try {
-            // 쓰기 작업이므로 writer 데이터 소스를 설정
-            DataSourceContextHolder.setDataSourceType("writer");
-
-            // 상품 조회
-            Product product = productRepository.findById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Product not found!"));
-
-            // 상품 정보 업데이트
-            product.setName(updatedProduct.getName());
-            product.setImageUrl(updatedProduct.getImageUrl());
-            product.setPrice(updatedProduct.getPrice());
-            product.setBrand(updatedProduct.getBrand());
-            product.setBest(updatedProduct.isBest());
-            product.setDeliveryInfo(updatedProduct.getDeliveryInfo());
-            product.setSaleStatus(updatedProduct.isSaleStatus());
-            product.setCouponStatus(updatedProduct.isCouponStatus());
-            product.setGiftStatus(updatedProduct.isGiftStatus());
-            product.setTodayDreamStatus(updatedProduct.isTodayDreamStatus());
-            product.setStock(updatedProduct.getStock());
-            product.setDiscountPrice(updatedProduct.getDiscountPrice());
-            product.setOtherDiscount(updatedProduct.isOtherDiscount());
-
-            // 데이터베이스에 업데이트된 상품 정보 저장
-            productRepository.save(product);
-
-            // 업데이트 후 해당 상품과 전체 목록 캐시 무효화
-            redisTemplate.delete("product:" + id);
-            redisTemplate.delete("products:all");
 
             return product;
         } finally {
