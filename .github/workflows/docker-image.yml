@@ -33,7 +33,6 @@ jobs:
         run: |
           TAG=${{ github.sha }}
           DOCKER_BUILDKIT=1 docker build --platform linux/amd64 \
-            --build-arg SSH_PRIVATE_KEY_BUILD="${{ secrets.SSH_PRIVATE_KEY_BUILD }}" \
             --build-arg SPRING_APPLICATION_NAME="${{ secrets.SPRING_APPLICATION_NAME }}" \
             --build-arg SPRING_DATASOURCE_WRITER_URL="${{ secrets.SPRING_DATASOURCE_WRITER_URL }}" \
             --build-arg SPRING_DATASOURCE_READER_URL="${{ secrets.SPRING_DATASOURCE_READER_URL }}" \
@@ -50,6 +49,7 @@ jobs:
             --build-arg SPRING_DATA_REDIS_HOST="${{ secrets.SPRING_DATA_REDIS_HOST }}" \
             --build-arg SPRING_DATA_REDIS_PORT="${{ secrets.SPRING_DATA_REDIS_PORT }}" \
             --build-arg GIT_TOKEN="${{ secrets.GIT_TOKEN }}" \
+            --build-arg REDIS_MAXMEMORY_POLICY="${{ secrets.REDIS_MAXMEMORY_POLICY }}" \
             -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hachwimu-product:$TAG .
 
       # 5. ECR에 도커 이미지 푸시
